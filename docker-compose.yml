@@ -1,49 +1,28 @@
-version: '3'
+version: '3.8'
 
 services:
-  stringer-setup:
-    image: stringerrss/stringer:latest
-    container_name: stringer-setup
-    restart: no
-    env_file: .env
-    volumes:
-      - ./.env:/app/.env
-    entrypoint: ["ruby"]
-    command: ["/app/docker/init_or_update_env.rb"]
-
-  stringer-postgres:
-    image: postgres:16-alpine
-    container_name: stringer-postgres
-    restart: always
-    depends_on:
-      stringer-setup:
-        condition: service_completed_successfully
-    networks:
-      - stringer-network
-    volumes:
-      - ./.env:/app/.env
-      - /srv/stringer/data:/var/lib/postgresql/data
-    env_file: .env
-
   stringer:
-    image: stringerrss/stringer:latest
-    container_name: stringer
     build: .
-    depends_on:
-      stringer-postgres:
-        condition: service_started
-      stringer-setup:
-        condition: service_completed_successfully
-    restart: always
     ports:
-      - 80:8080
-    networks:
-      - stringer-network
-    volumes:
-      - ./.env:/app/.env
-    env_file: .env
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - RACK_ENV=production
+      - DATABASE_URL=postgres://stringer:stringer_pass@db:5432/stringer_db
+      - SECRET_TOKEN=secure_token_placeholder_for_coursework
+    depends_on:
+      - db
+    restart: always
 
-networks:
-  stringer-network:
-    external: false
-    name: stringer-network
+  db:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_USER=stringer
+      - POSTGRES_PASSWORD=stringer_pass
+      - POSTGRES_DB=stringer_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres_data:
