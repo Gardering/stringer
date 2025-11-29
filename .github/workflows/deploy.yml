@@ -7,7 +7,7 @@ on:
     branches: [ "master", "main" ]
 
 jobs:
-  # 1: Аналіз якості коду
+  # ЕТАП 1: Аналіз якості коду (SonarQube)
   quality-analysis:
     name: Code Quality (SonarQube)
     runs-on: ubuntu-latest
@@ -22,12 +22,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Тут continue-on-error залишаємо, бо без платного сервера Sonar він не пройде.
+        # Але це не помилка коду, це відсутність сервера, тому це ок.
         continue-on-error: true
 
       - name: Confirm Analysis
-        run: echo "Static analysis completed successfully."
+        run: echo "Static analysis completed."
 
-  # 2: Збірка образу
+  # ЕТАП 2: Збірка Docker образу
   build-docker:
     name: Build Docker Image
     needs: quality-analysis
@@ -39,7 +41,7 @@ jobs:
       - name: Build Application Image
         run: docker build . --file Dockerfile --tag stringer-app:latest
 
-  # 3: (Розгортання)
+  # ЕТАП 3: Перевірка Ansible (Розгортання)
   deploy-check:
     name: Ansible Deployment Check
     needs: build-docker
@@ -48,11 +50,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install Ansible
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
+      # Встановлюємо Python (Ansible працює на Python)
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
 
-      - name: Run Ansible Playbook (Dry Run)
+      # Чесно встановлюємо Ansible та необхідні бібліотеки
+      - name: Install Ansible and Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          pip3 install ansible # Ставимо свіжий Ansible
+          ansible-galaxy collection install community.docker # Ставимо колекцію для Docker
+
+      # Запускаємо перевірку. Тепер вона має пройти чесно, без "|| true"
+      - name: Run Ansible Playbook (Syntax Check)
         run: |
           ansible-playbook ansible/playbook.yml -i ansible/inventory.ini --syntax-check
