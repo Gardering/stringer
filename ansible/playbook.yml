@@ -14,7 +14,7 @@
           - git
         state: present
         update_cache: yes
-      ignore_errors: yes  # Щоб локальний тест не вимагав sudo пароль в CI
+      ignore_errors: no
 
     - name: Ensure project directory exists
       file:

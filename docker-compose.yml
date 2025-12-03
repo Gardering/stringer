@@ -4,12 +4,17 @@ services:
   stringer:
     build: .
     ports:
-      - "8080:8080"
+      - "8090:8080"
     environment:
       - PORT=8080
-      - RACK_ENV=production
+      - RACK_ENV=production      # <--- Повернули PRODUCTION (це важливо!)
+      - ENFORCE_SSL=false        # <--- Вимкнули SSL, щоб не було редіректу на https
       - DATABASE_URL=postgres://stringer:stringer_pass@db:5432/stringer_db
-      - SECRET_TOKEN=secure_token_placeholder_for_coursework
+      - SECRET_TOKEN=super_secret_token_change_me_please_12345
+      - ENCRYPTION_PRIMARY_KEY=03a3d548393526c85854743787723223
+      - ENCRYPTION_DETERMINISTIC_KEY=f1532050906236312480392376483185
+      - ENCRYPTION_KEY_DERIVATION_SALT=a3f80321b1293a932901238491023812
+      - SECRET_KEY_BASE=c01d45c6e8329048a09238409238409238409238409238409238490238490238
     depends_on:
       - db
     restart: always
